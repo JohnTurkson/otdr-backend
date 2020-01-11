@@ -23,5 +23,6 @@ data class Trip(
 @Serializable
 data class User(
     @SerialName("_id") override val id: String,
-    val name: String
+    val name: String,
+    val email: String
 ) : Data()
