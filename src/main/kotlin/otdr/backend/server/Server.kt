@@ -48,7 +48,10 @@ fun Application.main() {
                 call.respond(HttpStatusCode.OK, encoder.stringify(Data.serializer(), it))
             }.onFailure {
                 it.printStackTrace()
-                call.respond(HttpStatusCode.NotFound, it.message ?: "")
+                call.respond(
+                    HttpStatusCode.BadRequest,
+                    encoder.stringify(ApiException.serializer(), it as ApiException)
+                )
             }
         }
         
