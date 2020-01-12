@@ -37,21 +37,10 @@ class Database(
             HttpMethod.Post -> builder.POST(HttpRequest.BodyPublishers.ofString(content))
             HttpMethod.Put -> builder.PUT(HttpRequest.BodyPublishers.ofString(content))
         }
-        
-        val response = client.sendAsync(
+    
+        return client.sendAsync(
             builder.build(), HttpResponse.BodyHandlers.ofString()
         ).join()
-        return response
-    }
-    
-    private suspend fun exists(database: String, id: String): Boolean {
-        val method = HttpMethod.Head
-        val response = query(database, id, method)
-        return response.statusCode() == HttpStatusCode.OK.value
-    }
-    
-    suspend fun userExists(userId: String): Boolean {
-        return exists(userDatabase, userId)
     }
     
     private suspend fun get(database: String, id: String): Data {

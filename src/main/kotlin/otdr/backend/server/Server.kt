@@ -67,7 +67,10 @@ fun Application.main() {
                 call.respond(HttpStatusCode.OK, encoder.stringify(Data.serializer(), it))
             }.onFailure {
                 it.printStackTrace()
-                encoder.stringify(ApiException.serializer(), it as ApiException)
+                call.respond(
+                    HttpStatusCode.BadRequest,
+                    encoder.stringify(ApiException.serializer(), it as ApiException)
+                )
             }
         }
         
