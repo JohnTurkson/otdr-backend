@@ -6,4 +6,4 @@ import kotlinx.serialization.Serializable
 data class UserSelector(val name: String = "", val email: String = "")
 
 @Serializable
-data class TripSelector(val userID: String = "")
+data class TripSelector(val userId: String = "")

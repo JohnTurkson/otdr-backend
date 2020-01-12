@@ -2,6 +2,8 @@ package otdr.backend.server
 
 import io.ktor.application.Application
 import io.ktor.application.call
+import io.ktor.application.install
+import io.ktor.features.ContentNegotiation
 import io.ktor.http.HttpStatusCode
 import io.ktor.request.receiveText
 import io.ktor.response.respond
@@ -39,6 +41,7 @@ fun Application.main() {
         Json(JsonConfiguration(encodeDefaults = false, strictMode = false, prettyPrint = true))
     
     routing {
+        install(ContentNegotiation)
         get("/user/{username}") {
             kotlin.runCatching {
                 val username = call.parameters["username"]
@@ -83,7 +86,7 @@ fun Application.main() {
                     throw GenericApiException("Invalid request body")
                 }
                 
-                database.findTrips(request.tripSelector)
+                database.findTrips(request)
             }.onSuccess {
                 call.respond(HttpStatusCode.OK, encoder.stringify(Data.serializer().list, it))
             }.onFailure {

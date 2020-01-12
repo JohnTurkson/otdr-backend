@@ -1,17 +1,15 @@
 package otdr.backend.server
 
-import io.ktor.client.HttpClient
-import io.ktor.client.call.call
-import io.ktor.client.engine.cio.CIO
-import io.ktor.client.request.header
-import io.ktor.client.response.HttpResponse
-import io.ktor.client.response.readText
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonConfiguration
 import kotlinx.serialization.list
 import otdr.backend.api.*
+import java.net.URI
+import java.net.http.HttpClient
+import java.net.http.HttpRequest
+import java.net.http.HttpResponse
 
 class Database(
     private val host: String,
@@ -20,7 +18,7 @@ class Database(
     private val userDatabase: String = "users",
     private val tripDatabase: String = "trips"
 ) {
-    private val client = HttpClient(CIO)
+    private val client = HttpClient.newHttpClient()
     private val encoder =
         Json(JsonConfiguration(encodeDefaults = false, strictMode = false, prettyPrint = true))
     
@@ -29,20 +27,28 @@ class Database(
         parameter: String,
         type: HttpMethod,
         content: String = ""
-    ): HttpResponse {
-        val call = client.call("http://$host:$port/$database/$parameter") {
-            method = type
-            header("Accept", "application/json")
-            header("Content-Type", "application/json")
-            body = content
+    ): HttpResponse<String> {
+        val builder = HttpRequest.newBuilder(URI.create("http://$host:$port/$database/$parameter"))
+            .header("Accept", "application/json")
+            .header("Content-Type", "application/json")
+        
+        when (type) {
+            HttpMethod.Get -> builder.GET()
+            HttpMethod.Post -> builder.POST(HttpRequest.BodyPublishers.ofString(content))
+            HttpMethod.Put -> builder.PUT(HttpRequest.BodyPublishers.ofString(content))
         }
-        return call.response
+        
+        val response = client.sendAsync(
+            builder.build(), HttpResponse.BodyHandlers.ofString()
+        ).join()
+        return response
     }
     
     private suspend fun exists(database: String, id: String): Boolean {
         val method = HttpMethod.Head
         val response = query(database, id, method)
-        return response.status == HttpStatusCode.OK
+        return response.statusCode() == HttpStatusCode.OK.value
+        // return response.status == HttpStatusCode.OK
     }
     
     suspend fun userExists(userID: String): Boolean {
@@ -52,12 +58,12 @@ class Database(
     private suspend fun get(database: String, id: String): Data {
         val method = HttpMethod.Get
         val response = query(database, id, method)
-        when (response.status) {
-            HttpStatusCode.BadRequest -> TODO()
-            HttpStatusCode.Unauthorized -> TODO()
-            HttpStatusCode.NotFound -> throw NotFoundException()
+        when (response.statusCode()) {
+            HttpStatusCode.BadRequest.value -> TODO()
+            HttpStatusCode.Unauthorized.value -> TODO()
+            HttpStatusCode.NotFound.value -> throw NotFoundException()
         }
-        return encoder.parse(Data.serializer(), response.readText())
+        return encoder.parse(Data.serializer(), response.body())
     }
     
     suspend fun getUser(userID: String): User {
@@ -69,11 +75,11 @@ class Database(
         val id = item.id
         val json = encoder.stringify(Data.serializer(), item)
         val response = query(database, id, method, json)
-        when (response.status) {
-            HttpStatusCode.BadRequest -> TODO()
-            HttpStatusCode.Unauthorized -> TODO()
-            HttpStatusCode.NotFound -> throw NotFoundException()
-            HttpStatusCode.Conflict -> throw ConflictException()
+        when (response.statusCode()) {
+            HttpStatusCode.BadRequest.value -> TODO()
+            HttpStatusCode.Unauthorized.value -> TODO()
+            HttpStatusCode.NotFound.value -> throw NotFoundException()
+            HttpStatusCode.Conflict.value -> throw ConflictException()
         }
     }
     
@@ -89,23 +95,23 @@ class Database(
         val parameter = "_find"
         val method = HttpMethod.Post
         val response = query(database, parameter, method, selector)
-        when (response.status) {
-            HttpStatusCode.BadRequest -> TODO()
-            HttpStatusCode.Unauthorized -> TODO()
-            HttpStatusCode.InternalServerError -> TODO()
+        when (response.statusCode()) {
+            HttpStatusCode.BadRequest.value -> throw GenericApiException("bad request")
+            HttpStatusCode.Unauthorized.value -> throw GenericApiException("unauthorized")
+            HttpStatusCode.InternalServerError.value -> throw GenericApiException("internal server error")
         }
-        return response.readText()
+        return response.body()
     }
     
-    suspend fun findUsers(userSelector: UserSelector): List<User> {
-        val selector = encoder.stringify(UserSelector.serializer(), userSelector)
+    suspend fun findUsers(request: FindUserRequest): List<User> {
+        val selector = encoder.stringify(FindUserRequest.serializer(), request)
         val response = find(userDatabase, selector)
         val wrapper = encoder.parse(Wrapper.serializer(User.serializer().list), response)
         return wrapper.contents
     }
     
-    suspend fun findTrips(tripSelector: TripSelector): List<Trip> {
-        val selector = encoder.stringify(TripSelector.serializer(), tripSelector)
+    suspend fun findTrips(request: FindTripsRequest): List<Trip> {
+        val selector = encoder.stringify(FindTripsRequest.serializer(), request)
         val response = find(tripDatabase, selector)
         val wrapper = encoder.parse(Wrapper.serializer(Trip.serializer().list), response)
         return wrapper.contents

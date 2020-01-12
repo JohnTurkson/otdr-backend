@@ -19,10 +19,9 @@ data class Location(
 data class Trip(
     @SerialName("_id") override val id: String,
     val name: String,
-    val user: User,
     val start: String,
     val end: String,
-    val creator: User,
+    val userId: String,
     val participants: List<User>,
     val returned: List<User>
 ) : Data()
