@@ -19,26 +19,33 @@ sealed class GetRequest : Request()
 @Serializable
 @SerialName("GetMessageRequest")
 data class GetMessageRequest(
-    val messageID: String
+    val messageId: String
 ) : GetRequest()
 
 @Serializable
 @SerialName("GetUserRequest")
 data class GetUserRequest(
-    val userID: String
+    val userId: String
 ) : GetRequest()
 
 @Serializable
 @SerialName("GetGroupRequest")
 data class GetGroupRequest(
-    val groupID: String
+    val groupId: String
 ) : GetRequest()
 
 @Serializable
 @SerialName("GetTripRequest")
 data class GetTripRequest(
-    val tripID: String
-): GetRequest()
+    val tripId: String
+) : GetRequest()
+
+@Serializable
+sealed class UpdateRequest : Request()
+
+@Serializable
+@SerialName("UpdateTripRequest")
+data class UpdateTripRequest(val userId: String, val tripId: String) : UpdateRequest()
 
 @Serializable
 sealed class CreateRequest : Request()
@@ -76,4 +83,4 @@ data class FindUserRequest(
 @SerialName("FindTripsRequest")
 data class FindTripsRequest(
     @SerialName("selector") val tripSelector: TripSelector
-): FindRequest()
+) : FindRequest()

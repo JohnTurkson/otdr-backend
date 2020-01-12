@@ -74,12 +74,60 @@ fun Application.main() {
             }
         }
         
+        get("/trip/{tripId}/participants") {
+            kotlin.runCatching {
+                val id = call.parameters["tripId"]
+                if (id.isNullOrBlank()) throw GeneralApiException("Invalid tripId")
+                val trip = database.getTrip(id)
+                trip.participantIds.map { database.getUser(it) }
+            }.onSuccess {
+                call.respond(HttpStatusCode.OK, encoder.stringify(Data.serializer().list, it))
+            }.onFailure {
+                call.respond(
+                    HttpStatusCode.BadRequest,
+                    encoder.stringify(ApiException.serializer(), it as ApiException)
+                )
+            }
+        }
+        
+        get("/trip/{tripId}/returned") {
+            kotlin.runCatching {
+                val id = call.parameters["tripId"]
+                if (id.isNullOrBlank()) throw GeneralApiException("Invalid tripId")
+                val trip = database.getTrip(id)
+                trip.returnedIds.map { database.getUser(it) }
+            }.onSuccess {
+                call.respond(HttpStatusCode.OK, encoder.stringify(Data.serializer().list, it))
+            }.onFailure {
+                call.respond(
+                    HttpStatusCode.BadRequest,
+                    encoder.stringify(ApiException.serializer(), it as ApiException)
+                )
+            }
+        }
+        
+        get("/trip/{tripId}/unaccounted") {
+            kotlin.runCatching {
+                val id = call.parameters["tripId"]
+                if (id.isNullOrBlank()) throw GeneralApiException("Invalid tripId")
+                val trip = database.getTrip(id)
+                trip.participantIds.minus(trip.returnedIds).map { database.getUser(it) }
+            }.onSuccess {
+                call.respond(HttpStatusCode.OK, encoder.stringify(Data.serializer().list, it))
+            }.onFailure {
+                call.respond(
+                    HttpStatusCode.BadRequest,
+                    encoder.stringify(ApiException.serializer(), it as ApiException)
+                )
+            }
+        }
+        
         get("/user/{username}/trips") {
             kotlin.runCatching {
                 val username = call.parameters["username"]
                 if (username.isNullOrBlank()) throw GeneralApiException("Invalid username")
-                val user = database.getUser(username)
-                val trips: List<Trip> = listOf()
+                val request = FindTripsRequest(TripSelector(creatorId = username))
+                val trips: List<Trip> = database.findTrips(request)
                 trips
             }.onSuccess {
                 call.respond(HttpStatusCode.OK, encoder.stringify(Data.serializer().list, it))
@@ -92,10 +140,164 @@ fun Application.main() {
             }
         }
         
-        post("/find/users") {
-            val body = call.receiveText()
-            if (body.isBlank()) throw GeneralApiException("Invalid body")
+        get("/user/{username}/trips/active") {
             kotlin.runCatching {
+                val username = call.parameters["username"]
+                if (username.isNullOrBlank()) throw GeneralApiException("Invalid username")
+                val user = database.getUser(username)
+                val trips = database.findTrips(FindTripsRequest(TripSelector(user.id)))
+                // TODO filter by trips that are between start and end time
+                trips.filter { it.participantIds.contains(user.id) }
+            }.onSuccess {
+                call.respond(HttpStatusCode.OK, encoder.stringify(Data.serializer().list, it))
+            }.onFailure {
+                call.respond(
+                    HttpStatusCode.BadRequest,
+                    encoder.stringify(ApiException.serializer(), it as ApiException)
+                )
+            }
+        }
+        
+        get("/user/{username}/trips/returned") {
+            kotlin.runCatching {
+                val username = call.parameters["username"]
+                if (username.isNullOrBlank()) throw GeneralApiException("Invalid username")
+                val user = database.getUser(username)
+                val trips = database.findTrips(FindTripsRequest(TripSelector(user.id)))
+                trips.filter { it.returnedIds.contains(user.id) }
+            }.onSuccess {
+                call.respond(HttpStatusCode.OK, encoder.stringify(Data.serializer().list, it))
+            }.onFailure {
+                call.respond(
+                    HttpStatusCode.BadRequest,
+                    encoder.stringify(ApiException.serializer(), it as ApiException)
+                )
+            }
+        }
+        
+        get("/user/{username}/trips/unaccounted") {
+            kotlin.runCatching {
+                val username = call.parameters["username"]
+                if (username.isNullOrBlank()) throw GeneralApiException("Invalid username")
+                val user = database.getUser(username)
+                val trips = database.findTrips(FindTripsRequest(TripSelector(user.id)))
+                // TODO filter by trips that have are before end time
+                trips.filter { it.participantIds.minus(it.returnedIds).contains(user.id) }
+            }.onSuccess {
+                call.respond(HttpStatusCode.OK, encoder.stringify(Data.serializer().list, it))
+            }.onFailure {
+                call.respond(
+                    HttpStatusCode.BadRequest,
+                    encoder.stringify(ApiException.serializer(), it as ApiException)
+                )
+            }
+        }
+        
+        get("/user/{username}/friends") {
+            kotlin.runCatching {
+                val username = call.parameters["username"]
+                if (username.isNullOrBlank()) throw GeneralApiException("Invalid username")
+                val user = database.getUser(username)
+                user.friends.map { database.getUser(it) }
+            }.onSuccess {
+                call.respond(HttpStatusCode.OK, encoder.stringify(Data.serializer().list, it))
+            }.onFailure {
+                it.printStackTrace()
+                call.respond(
+                    HttpStatusCode.BadRequest,
+                    encoder.stringify(ApiException.serializer(), it as ApiException)
+                )
+            }
+        }
+        
+        post("/trip/add") {
+            kotlin.runCatching {
+                val body = call.receiveText()
+                if (body.isBlank()) throw GeneralApiException("Invalid body")
+                val (userId, tripId) = try {
+                    encoder.parse(UpdateTripRequest.serializer(), body)
+                } catch (e: Exception) {
+                    throw GeneralApiException("Invalid request body")
+                }
+                database.addTripParticipant(userId, tripId)
+            }.onSuccess {
+                call.respond(HttpStatusCode.OK, encoder.stringify(Data.serializer(), it))
+            }.onFailure {
+                it.printStackTrace()
+                call.respond(
+                    HttpStatusCode.BadRequest,
+                    encoder.stringify(ApiException.serializer(), it as ApiException)
+                )
+            }
+        }
+        
+        post("/trip/remove") {
+            kotlin.runCatching {
+                val body = call.receiveText()
+                if (body.isBlank()) throw GeneralApiException("Invalid body")
+                val (userId, tripId) = try {
+                    encoder.parse(UpdateTripRequest.serializer(), body)
+                } catch (e: Exception) {
+                    throw GeneralApiException("Invalid request body")
+                }
+                database.removeTripParticipant(userId, tripId)
+            }.onSuccess {
+                call.respond(HttpStatusCode.OK, encoder.stringify(Data.serializer(), it))
+            }.onFailure {
+                it.printStackTrace()
+                call.respond(
+                    HttpStatusCode.BadRequest,
+                    encoder.stringify(ApiException.serializer(), it as ApiException)
+                )
+            }
+        }
+        
+        post("/trip/set/returned") {
+            kotlin.runCatching {
+                val body = call.receiveText()
+                if (body.isBlank()) throw GeneralApiException("Invalid body")
+                val (userId, tripId) = try {
+                    encoder.parse(UpdateTripRequest.serializer(), body)
+                } catch (e: Exception) {
+                    throw GeneralApiException("Invalid request body")
+                }
+                database.setUserReturned(userId, tripId)
+            }.onSuccess {
+                call.respond(HttpStatusCode.OK, encoder.stringify(Data.serializer(), it))
+            }.onFailure {
+                it.printStackTrace()
+                call.respond(
+                    HttpStatusCode.BadRequest,
+                    encoder.stringify(ApiException.serializer(), it as ApiException)
+                )
+            }
+        }
+        
+        post("/trip/set/unaccounted") {
+            kotlin.runCatching {
+                val body = call.receiveText()
+                if (body.isBlank()) throw GeneralApiException("Invalid body")
+                val (userId, tripId) = try {
+                    encoder.parse(UpdateTripRequest.serializer(), body)
+                } catch (e: Exception) {
+                    throw GeneralApiException("Invalid request body")
+                }
+                database.setUserUnaccounted(userId, tripId)
+            }.onSuccess {
+                call.respond(HttpStatusCode.OK, encoder.stringify(Data.serializer(), it))
+            }.onFailure {
+                it.printStackTrace()
+                call.respond(
+                    HttpStatusCode.BadRequest,
+                    encoder.stringify(ApiException.serializer(), it as ApiException)
+                )
+            }
+        }
+        
+        post("/find/users") {
+            kotlin.runCatching {
+                val body = call.receiveText()
+                if (body.isBlank()) throw GeneralApiException("Invalid body")
                 val request = try {
                     encoder.parse(FindUserRequest.serializer(), body)
                 } catch (e: Exception) {
@@ -114,9 +316,9 @@ fun Application.main() {
         }
         
         post("/find/trips") {
-            val body = call.receiveText()
-            if (body.isBlank()) throw GeneralApiException("Invalid body")
             kotlin.runCatching {
+                val body = call.receiveText()
+                if (body.isBlank()) throw GeneralApiException("Invalid body")
                 val request = try {
                     encoder.parse(FindTripsRequest.serializer(), body)
                 } catch (e: Exception) {
@@ -135,9 +337,9 @@ fun Application.main() {
         }
         
         post("/create/user") {
-            val body = call.receiveText()
-            if (body.isBlank()) throw GeneralApiException("Invalid body")
             kotlin.runCatching {
+                val body = call.receiveText()
+                if (body.isBlank()) throw GeneralApiException("Invalid body")
                 val request = try {
                     encoder.parse(CreateUserRequest.serializer(), body)
                 } catch (e: Exception) {
@@ -145,7 +347,7 @@ fun Application.main() {
                 }
                 val (username, name, email, phone, password) = request
                 val login = Login(username, password)
-                val friends = emptyList<User>()
+                val friends = emptyList<String>()
                 val user = User(username, name, email, phone, friends)
                 database.createLogin(login)
                 database.createUser(user)
@@ -162,19 +364,18 @@ fun Application.main() {
         }
         
         post("/create/trip") {
-            val body = call.receiveText()
-            if (body.isBlank()) throw GeneralApiException("Invalid body")
             kotlin.runCatching {
+                val body = call.receiveText()
+                if (body.isBlank()) throw GeneralApiException("Invalid body")
                 val request = try {
                     encoder.parse(CreateTripRequest.serializer(), body)
                 } catch (e: Exception) {
                     throw GeneralApiException("Invalid request body")
                 }
-                val (name, start, end, creatorId, participantsIds) = request
+                val (name, start, end, creatorId, participantIds) = request
                 val id = ID.generate()
-                val participants = participantsIds.map { database.getUser(it) }
-                val returned = emptyList<User>()
-                val trip = Trip(id, name, start, end, creatorId, participants, returned)
+                val returnedIds = emptyList<String>()
+                val trip = Trip(id, name, start, end, creatorId, participantIds, returnedIds)
                 database.createTrip(trip)
                 trip
             }.onSuccess {

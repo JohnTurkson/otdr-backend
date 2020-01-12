@@ -22,8 +22,8 @@ data class Trip(
     val start: String,
     val end: String,
     val creatorId: String,
-    val participants: List<User>,
-    val returned: List<User>
+    val participantIds: List<String>,
+    val returnedIds: List<String>
 ) : Data()
 
 @Serializable
@@ -33,7 +33,7 @@ data class User(
     val name: String,
     val email: String,
     val phone: String,
-    val friends: List<User>
+    val friends: List<String>
 ) : Data()
 
 @Serializable

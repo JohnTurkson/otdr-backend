@@ -26,21 +26,24 @@ class Database(
         database: String,
         parameter: String,
         type: HttpMethod,
-        content: String = ""
+        content: String = "",
+        revision: String = ""
     ): HttpResponse<String> {
         val builder = HttpRequest.newBuilder(URI.create("http://$host:$port/$database/$parameter"))
             .header("Accept", "application/json")
             .header("Content-Type", "application/json")
+        
+        if (revision.isNotBlank()) {
+            builder.header("If-Match", revision)
+        }
         
         when (type) {
             HttpMethod.Get -> builder.GET()
             HttpMethod.Post -> builder.POST(HttpRequest.BodyPublishers.ofString(content))
             HttpMethod.Put -> builder.PUT(HttpRequest.BodyPublishers.ofString(content))
         }
-    
-        return client.sendAsync(
-            builder.build(), HttpResponse.BodyHandlers.ofString()
-        ).join()
+        
+        return client.sendAsync(builder.build(), HttpResponse.BodyHandlers.ofString()).join()
     }
     
     private suspend fun get(database: String, id: String): Data {
@@ -62,7 +65,74 @@ class Database(
         return get(tripDatabase, tripId) as Trip
     }
     
-    private suspend fun <T : Data> create(database: String, item: T) {
+    private suspend fun getRevision(database: String, id: String): String {
+        val response = query(database, id, HttpMethod.Get)
+        when (response.statusCode()) {
+            HttpStatusCode.BadRequest.value -> TODO()
+            HttpStatusCode.Unauthorized.value -> TODO()
+            HttpStatusCode.NotFound.value -> throw NotFoundException()
+        }
+        val revision = encoder.parse(Revision.serializer(), response.body())
+        return revision.version
+    }
+    
+    private suspend fun <T : Data> update(
+        database: String,
+        id: String,
+        item: T,
+        revision: String
+    ): T {
+        val method = HttpMethod.Put
+        val json = encoder.stringify(Data.serializer(), item)
+        val response = query(database, id, method, json, revision)
+        when (response.statusCode()) {
+            HttpStatusCode.BadRequest.value -> TODO()
+            HttpStatusCode.Unauthorized.value -> TODO()
+            HttpStatusCode.NotFound.value -> throw NotFoundException()
+            HttpStatusCode.Conflict.value -> throw ConflictException()
+        }
+        return item
+    }
+    
+    suspend fun addTripParticipant(userId: String, tripId: String): Trip {
+        val user = getUser(userId)
+        val (id, name, start, end, creatorId, participantIds, returnedIds) = getTrip(tripId)
+        val revision = getRevision(tripDatabase, id)
+        // TODO check that user is not in partcipants
+        val updated = Trip(id, name, start, end, creatorId, participantIds + user.id, returnedIds)
+        return update(tripDatabase, tripId, updated, revision)
+    }
+    
+    suspend fun removeTripParticipant(userId: String, tripId: String): Trip {
+        val user = getUser(userId)
+        val (id, name, start, end, creatorId, participantIds, returnedIds) = getTrip(tripId)
+        val revision = getRevision(tripDatabase, id)
+        // TODO check that user is in partcipants
+        val updated = Trip(id, name, start, end, creatorId, participantIds - user.id, returnedIds)
+        return update(tripDatabase, tripId, updated, revision)
+    }
+    
+    suspend fun setUserReturned(userId: String, tripId: String): Trip {
+        val user = getUser(userId)
+        val (id, name, start, end, creatorId, participantIds, returnedIds) = getTrip(tripId)
+        val revision = getRevision(tripDatabase, id)
+        // TODO check if user is in participantIds
+        // TODO chcek that user is in returnedIds
+        val updated = Trip(id, name, start, end, creatorId, participantIds, returnedIds - user.id)
+        return update(tripDatabase, tripId, updated, revision)
+    }
+    
+    suspend fun setUserUnaccounted(userId: String, tripId: String): Trip {
+        val user = getUser(userId)
+        val (id, name, start, end, creatorId, participantIds, returnedIds) = getTrip(tripId)
+        val revision = getRevision(tripDatabase, id)
+        // TODO check if user is in participantIds
+        // TODO chcek that user is not in returnedIds
+        val updated = Trip(id, name, start, end, creatorId, participantIds, returnedIds + user.id)
+        return update(tripDatabase, tripId, updated, revision)
+    }
+    
+    private suspend fun <T : Data> create(database: String, item: T): T {
         val method = HttpMethod.Put
         val id = item.id
         val json = encoder.stringify(Data.serializer(), item)
@@ -73,18 +143,19 @@ class Database(
             HttpStatusCode.NotFound.value -> throw NotFoundException()
             HttpStatusCode.Conflict.value -> throw ConflictException()
         }
+        return item
     }
     
-    suspend fun createLogin(login: Login) {
-        create(loginDatabase, login)
+    suspend fun createLogin(login: Login): Login {
+        return create(loginDatabase, login)
     }
     
-    suspend fun createUser(user: User) {
-        create(userDatabase, user)
+    suspend fun createUser(user: User): User {
+        return create(userDatabase, user)
     }
     
-    suspend fun createTrip(trip: Trip) {
-        create(tripDatabase, trip)
+    suspend fun createTrip(trip: Trip): Trip {
+        return create(tripDatabase, trip)
     }
     
     private suspend fun find(database: String, selector: String): String {
