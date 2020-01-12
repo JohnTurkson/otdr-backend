@@ -179,9 +179,16 @@ class Database(
     }
     
     suspend fun findTrips(request: FindTripsRequest): List<Trip> {
-        val selector = encoder.stringify(FindTripsRequest.serializer(), request)
+        val (creatorId, name, start, end) = request.tripSelector
+        val selector = encoder.stringify(
+            FindTripsRequest.serializer(), FindTripsRequest(
+                TripSelector(creatorId, name)
+            )
+        )
         val response = find(tripDatabase, selector)
         val wrapper = encoder.parse(Wrapper.serializer(Trip.serializer().list), response)
         return wrapper.contents
+            .filter { start.isBlank() || it.start >= start }
+            .filter { end.isBlank() || it.end <= end }
     }
 }

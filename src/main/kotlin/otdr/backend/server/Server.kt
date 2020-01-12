@@ -2,8 +2,6 @@ package otdr.backend.server
 
 import io.ktor.application.Application
 import io.ktor.application.call
-import io.ktor.application.install
-import io.ktor.features.ContentNegotiation
 import io.ktor.http.HttpStatusCode
 import io.ktor.request.receiveText
 import io.ktor.response.respond
@@ -18,6 +16,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonConfiguration
 import kotlinx.serialization.list
 import otdr.backend.api.*
+import java.time.Instant
 
 fun main() {
     val environment = applicationEngineEnvironment {
@@ -145,8 +144,10 @@ fun Application.main() {
                 if (username.isNullOrBlank()) throw GeneralApiException("Invalid username")
                 val user = database.getUser(username)
                 val trips = database.findTrips(FindTripsRequest(TripSelector(user.id)))
-                // TODO filter by trips that are between start and end time
                 trips.filter { it.participantIds.contains(user.id) }
+                    .filter {
+                        Instant.now().toString() >= it.start && Instant.now().toString() <= it.end
+                    }
             }.onSuccess {
                 call.respond(HttpStatusCode.OK, encoder.stringify(Data.serializer().list, it))
             }.onFailure {
@@ -180,8 +181,8 @@ fun Application.main() {
                 if (username.isNullOrBlank()) throw GeneralApiException("Invalid username")
                 val user = database.getUser(username)
                 val trips = database.findTrips(FindTripsRequest(TripSelector(user.id)))
-                // TODO filter by trips that have are before end time
                 trips.filter { it.participantIds.minus(it.returnedIds).contains(user.id) }
+                    .filter { it.end <= Instant.now().toString() }
             }.onSuccess {
                 call.respond(HttpStatusCode.OK, encoder.stringify(Data.serializer().list, it))
             }.onFailure {
