@@ -17,21 +17,9 @@ data class LoginRequest(
 sealed class GetRequest : Request()
 
 @Serializable
-@SerialName("GetMessageRequest")
-data class GetMessageRequest(
-    val messageId: String
-) : GetRequest()
-
-@Serializable
 @SerialName("GetUserRequest")
 data class GetUserRequest(
     val userId: String
-) : GetRequest()
-
-@Serializable
-@SerialName("GetGroupRequest")
-data class GetGroupRequest(
-    val groupId: String
 ) : GetRequest()
 
 @Serializable
