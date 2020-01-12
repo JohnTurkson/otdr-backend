@@ -16,8 +16,9 @@ import otdr.backend.api.*
 class Database(
     private val host: String,
     private val port: Int = 5984,
+    private val loginDatabase: String = "logins",
     private val userDatabase: String = "users",
-    private val loginDatabase: String = "logins"
+    private val tripDatabase: String = "trips"
 ) {
     private val client = HttpClient(CIO)
     private val encoder =
@@ -75,13 +76,14 @@ class Database(
         }
     }
     
+    suspend fun createLogin(login: Login) {
+        create(loginDatabase, login)
+    }
+    
     suspend fun createUser(user: User) {
         create(userDatabase, user)
     }
     
-    suspend fun createLogin(login: Login) {
-        create(loginDatabase, login)
-    }
     
     private suspend fun find(database: String, selector: String): String {
         val parameter = "_find"
@@ -99,6 +101,13 @@ class Database(
         val selector = encoder.stringify(UserSelector.serializer(), userSelector)
         val response = find(userDatabase, selector)
         val wrapper = encoder.parse(Wrapper.serializer(User.serializer().list), response)
+        return wrapper.contents
+    }
+    
+    suspend fun findTrips(tripSelector: TripSelector): List<Trip> {
+        val selector = encoder.stringify(TripSelector.serializer(), tripSelector)
+        val response = find(tripDatabase, selector)
+        val wrapper = encoder.parse(Wrapper.serializer(Trip.serializer().list), response)
         return wrapper.contents
     }
 }

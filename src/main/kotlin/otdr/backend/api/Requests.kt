@@ -1,6 +1,5 @@
 package otdr.backend.api
 
-
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -36,6 +35,12 @@ data class GetGroupRequest(
 ) : GetRequest()
 
 @Serializable
+@SerialName("GetTripRequest")
+data class GetTripRequest(
+    val tripID: String
+): GetRequest()
+
+@Serializable
 sealed class CreateRequest : Request()
 
 @Serializable
@@ -54,5 +59,11 @@ sealed class FindRequest : Request()
 @Serializable
 @SerialName("FindUserRequest")
 data class FindUserRequest(
-    val selector: UserSelector
+    @SerialName("selector") val userSelector: UserSelector
 ) : FindRequest()
+
+@Serializable
+@SerialName("FindTripsRequest")
+data class FindTripsRequest(
+    @SerialName("selector") val tripSelector: TripSelector
+): FindRequest()
