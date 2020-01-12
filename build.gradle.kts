@@ -39,6 +39,11 @@ tasks {
         kotlinOptions.jvmTarget = "1.8"
     }
     
+    wrapper {
+        gradleVersion = "6.0.1"
+        distributionType = Wrapper.DistributionType.ALL
+    }
+    
     jar {
         from(sourceSets.main.get().output)
         
