@@ -127,12 +127,13 @@ class Database(
         val (id, name, start, end, creatorId, participantIds, returnedIds) = getTrip(tripId)
         val revision = getRevision(tripDatabase, id)
         // TODO check if user is in participantIds
-        // TODO chcek that user is not in returnedIds
+        // TODO check that user is not in returnedIds
         val updated = Trip(id, name, start, end, creatorId, participantIds, returnedIds + user.id)
         return update(tripDatabase, tripId, updated, revision)
     }
     
     private suspend fun <T : Data> create(database: String, item: T): T {
+        // TODO check for overlapping trip times
         val method = HttpMethod.Put
         val id = item.id
         val json = encoder.stringify(Data.serializer(), item)
