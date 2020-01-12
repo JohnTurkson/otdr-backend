@@ -41,7 +41,6 @@ fun Application.main() {
         Json(JsonConfiguration(encodeDefaults = false, strictMode = false, prettyPrint = true))
     
     routing {
-        install(ContentNegotiation)
         get("/user/{username}") {
             kotlin.runCatching {
                 val username = call.parameters["username"]
