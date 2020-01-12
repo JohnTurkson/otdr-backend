@@ -46,6 +46,16 @@ class Database(
         return client.sendAsync(builder.build(), HttpResponse.BodyHandlers.ofString()).join()
     }
     
+    suspend fun login(username: String, password: String): User {
+        val login = getLogin(username)
+        val user = getUser(username)
+        if (password != login.password) {
+            throw GenericApiException("invalid password")
+        } else {
+            return user
+        }
+    }
+    
     private suspend fun get(database: String, id: String): Data {
         val method = HttpMethod.Get
         val response = query(database, id, method)
@@ -63,6 +73,10 @@ class Database(
     
     suspend fun getTrip(tripId: String): Trip {
         return get(tripDatabase, tripId) as Trip
+    }
+            
+    private suspend fun getLogin(username: String): Login {
+        return get(loginDatabase, username) as Login
     }
     
     private suspend fun getRevision(database: String, id: String): String {
