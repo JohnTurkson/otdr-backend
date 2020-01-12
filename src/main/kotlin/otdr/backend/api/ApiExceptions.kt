@@ -9,7 +9,7 @@ sealed class ApiException : Exception()
 
 @Serializable
 @SerialName("GenericApiException")
-class GenericApiException(val reason: String) : ApiException()
+class GeneralApiException(val reason: String) : ApiException()
 
 @Serializable
 @SerialName("NotFoundException")
