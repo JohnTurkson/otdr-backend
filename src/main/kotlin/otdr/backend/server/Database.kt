@@ -50,7 +50,7 @@ class Database(
         val login = getLogin(username)
         val user = getUser(username)
         if (password != login.password) {
-            throw GenericApiException("invalid password")
+            throw GeneralApiException("invalid password")
         } else {
             return user
         }
