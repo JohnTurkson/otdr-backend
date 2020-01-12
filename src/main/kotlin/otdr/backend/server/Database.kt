@@ -102,19 +102,3 @@ class Database(
         return wrapper.contents
     }
 }
-
-@Serializable
-@SerialName("ApiException")
-sealed class ApiException : Exception()
-
-@Serializable
-@SerialName("GenericApiException")
-class GenericApiException(val reason: String) : ApiException()
-
-@Serializable
-@SerialName("NotFoundException")
-class NotFoundException : ApiException()
-
-@Serializable
-@SerialName("ConflictException")
-class ConflictException : ApiException()
