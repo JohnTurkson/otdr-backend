@@ -84,7 +84,6 @@ class Database(
         create(userDatabase, user)
     }
     
-    
     private suspend fun find(database: String, selector: String): String {
         val parameter = "_find"
         val method = HttpMethod.Post

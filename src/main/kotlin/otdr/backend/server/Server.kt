@@ -73,7 +73,7 @@ fun Application.main() {
             }
         }
         
-        post("/trips") {
+        post("/find/trips") {
             val body = call.receiveText()
             if (body.isBlank()) throw GenericApiException("Invalid body")
             kotlin.runCatching {
