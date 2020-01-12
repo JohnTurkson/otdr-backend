@@ -21,7 +21,7 @@ data class Trip(
     val name: String,
     val start: String,
     val end: String,
-    val userId: String,
+    val creatorId: String,
     val participants: List<User>,
     val returned: List<User>
 ) : Data()

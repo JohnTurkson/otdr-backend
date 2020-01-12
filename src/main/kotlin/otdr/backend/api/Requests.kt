@@ -46,12 +46,22 @@ sealed class CreateRequest : Request()
 @Serializable
 @SerialName("CreateUserRequest")
 data class CreateUserRequest(
-    val id: String,
+    val username: String,
     val name: String,
     val email: String,
     val phone: String,
     val password: String
 ) : CreateRequest()
+
+@Serializable
+@SerialName("CreateTripRequest")
+data class CreateTripRequest(
+    val name: String,
+    val start: String,
+    val end: String,
+    val creatorId: String,
+    val participantIds: List<String>
+)
 
 @Serializable
 sealed class FindRequest : Request()

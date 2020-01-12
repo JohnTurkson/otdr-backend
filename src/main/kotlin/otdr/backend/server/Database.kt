@@ -48,11 +48,10 @@ class Database(
         val method = HttpMethod.Head
         val response = query(database, id, method)
         return response.statusCode() == HttpStatusCode.OK.value
-        // return response.status == HttpStatusCode.OK
     }
     
-    suspend fun userExists(userID: String): Boolean {
-        return exists(userDatabase, userID)
+    suspend fun userExists(userId: String): Boolean {
+        return exists(userDatabase, userId)
     }
     
     private suspend fun get(database: String, id: String): Data {
@@ -66,8 +65,12 @@ class Database(
         return encoder.parse(Data.serializer(), response.body())
     }
     
-    suspend fun getUser(userID: String): User {
-        return get(userDatabase, userID) as User
+    suspend fun getUser(userId: String): User {
+        return get(userDatabase, userId) as User
+    }
+    
+    suspend fun getTrip(tripId: String): Trip {
+        return get(tripDatabase, tripId) as Trip
     }
     
     private suspend fun <T : Data> create(database: String, item: T) {
@@ -91,14 +94,18 @@ class Database(
         create(userDatabase, user)
     }
     
+    suspend fun createTrip(trip: Trip) {
+        create(tripDatabase, trip)
+    }
+    
     private suspend fun find(database: String, selector: String): String {
         val parameter = "_find"
         val method = HttpMethod.Post
         val response = query(database, parameter, method, selector)
         when (response.statusCode()) {
-            HttpStatusCode.BadRequest.value -> throw GenericApiException("bad request")
-            HttpStatusCode.Unauthorized.value -> throw GenericApiException("unauthorized")
-            HttpStatusCode.InternalServerError.value -> throw GenericApiException("internal server error")
+            HttpStatusCode.BadRequest.value -> throw GeneralApiException("bad request")
+            HttpStatusCode.Unauthorized.value -> throw GeneralApiException("unauthorized")
+            HttpStatusCode.InternalServerError.value -> throw GeneralApiException("internal server error")
         }
         return response.body()
     }
