@@ -56,6 +56,27 @@ fun Application.main() {
             }
         }
         
+        post("/login") {
+            kotlin.runCatching {
+                val body = call.receiveText()
+                if (body.isBlank()) throw GeneralApiException("Invalid body")
+                val (username, password) = try {
+                    encoder.parse(LoginRequest.serializer(), body)
+                } catch (e: Exception) {
+                    throw GeneralApiException("Invalid request body")
+                }
+                database.login(username, password)
+            }.onSuccess {
+                call.respond(HttpStatusCode.OK, encoder.stringify(Data.serializer(), it))
+            }.onFailure {
+                it.printStackTrace()
+                call.respond(
+                    HttpStatusCode.BadRequest,
+                    encoder.stringify(ApiException.serializer(), it as ApiException)
+                )
+            }
+        }
+        
         get("/trip/{tripId}") {
             kotlin.runCatching {
                 val id = call.parameters["tripId"]
