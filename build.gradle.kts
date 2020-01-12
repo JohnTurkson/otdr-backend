@@ -1,7 +1,6 @@
 plugins {
     application
     kotlin("jvm") version "1.3.61"
-    kotlin("plugin.spring") version "1.3.61"
     id("org.jetbrains.kotlin.plugin.serialization") version "1.3.61"
 }
 
