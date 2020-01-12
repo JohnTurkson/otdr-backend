@@ -37,3 +37,9 @@ data class User(
     val friends: List<User>
 ) : Data()
 
+@Serializable
+@SerialName("Login")
+data class Login(
+    @SerialName("_id") override val id: String,
+    val password: String
+) : Data()
