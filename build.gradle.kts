@@ -34,7 +34,25 @@ tasks {
     compileKotlin {
         kotlinOptions.jvmTarget = "1.8"
     }
+    
     compileTestKotlin {
         kotlinOptions.jvmTarget = "1.8"
+    }
+    
+    jar {
+        from(sourceSets.main.get().output)
+        
+        dependsOn(configurations.runtimeClasspath)
+        
+        from({
+            configurations.runtimeClasspath.get()
+                .filter { it.name.endsWith("jar") }
+                .map { zipTree(it) }
+        })
+        
+        manifest {
+            attributes["Manifest-Version"] = "1.0"
+            attributes["Main-Class"] = "otdr.backend.server.ServerKt"
+        }
     }
 }
