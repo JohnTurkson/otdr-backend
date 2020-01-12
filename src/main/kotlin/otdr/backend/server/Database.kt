@@ -33,6 +33,7 @@ class Database(
         val call = client.call("http://$host:$port/$database/$parameter") {
             method = type
             header("Accept", "application/json")
+            header("Content-Type", "application/json")
             body = content
         }
         return call.response
