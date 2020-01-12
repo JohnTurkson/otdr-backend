@@ -7,6 +7,7 @@ import kotlinx.serialization.Serializable
 sealed class Data : Identifiable
 
 @Serializable
+@SerialName("Location")
 data class Location(
     @SerialName("_id") override val id: String,
     val latitude: String,
@@ -14,15 +15,25 @@ data class Location(
 ) : Data()
 
 @Serializable
+@SerialName("Trip")
 data class Trip(
     @SerialName("_id") override val id: String,
     val name: String,
-    val user: User
+    val user: User,
+    val start: String,
+    val end: String,
+    val creator: User,
+    val participants: List<User>,
+    val returned: List<User>
 ) : Data()
 
 @Serializable
+@SerialName("User")
 data class User(
     @SerialName("_id") override val id: String,
     val name: String,
-    val email: String
+    val email: String,
+    val phone: String,
+    val friends: List<User>
 ) : Data()
+
