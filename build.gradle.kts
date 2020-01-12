@@ -20,7 +20,6 @@ dependencies {
     implementation("io.ktor:ktor-server-cio:1.2.6")
     implementation("io.ktor:ktor-client-cio:1.2.6")
     implementation("io.ktor:ktor-serialization:1.2.6")
-    implementation("io.ktor:ktor-websockets:1.2.6")
 }
 
 application {
