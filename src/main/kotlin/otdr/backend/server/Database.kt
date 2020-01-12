@@ -8,20 +8,16 @@ import io.ktor.client.response.HttpResponse
 import io.ktor.client.response.readText
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonConfiguration
 import kotlinx.serialization.list
-import otdr.backend.api.Data
-import otdr.backend.api.User
-import otdr.backend.api.UserSelector
-import otdr.backend.api.Wrapper
+import otdr.backend.api.*
 
 class Database(
     private val host: String,
     private val port: Int = 5984,
-    private val userDatabase: String = "users"
+    private val userDatabase: String = "users",
+    private val loginDatabase: String = "logins"
 ) {
     private val client = HttpClient(CIO)
     private val encoder =
@@ -81,6 +77,10 @@ class Database(
     
     suspend fun createUser(user: User) {
         create(userDatabase, user)
+    }
+    
+    suspend fun createLogin(login: Login) {
+        create(loginDatabase, login)
     }
     
     private suspend fun find(database: String, selector: String): String {
