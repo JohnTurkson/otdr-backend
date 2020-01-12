@@ -8,6 +8,8 @@ import io.ktor.client.response.HttpResponse
 import io.ktor.client.response.readText
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonConfiguration
 import kotlinx.serialization.list
@@ -101,8 +103,18 @@ class Database(
     }
 }
 
-sealed class DatabaseException : Exception()
+@Serializable
+@SerialName("ApiException")
+sealed class ApiException : Exception()
 
-class NotFoundException : DatabaseException()
+@Serializable
+@SerialName("GenericApiException")
+class GenericApiException(val reason: String) : ApiException()
 
-class ConflictException : DatabaseException()
+@Serializable
+@SerialName("NotFoundException")
+class NotFoundException : ApiException()
+
+@Serializable
+@SerialName("ConflictException")
+class ConflictException : ApiException()
