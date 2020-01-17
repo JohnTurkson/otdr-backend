@@ -19,6 +19,7 @@ dependencies {
     implementation("io.ktor:ktor-server-cio:1.2.6")
     implementation("io.ktor:ktor-client-cio:1.2.6")
     implementation("io.ktor:ktor-serialization:1.2.6")
+    implementation("org.slf4j:slf4j-nop:1.7.30")
 }
 
 application {
