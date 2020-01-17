@@ -1,0 +1,21 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/openjdk:latest
+    steps:
+      - checkout
+      - run:
+          name: Clean
+          command: ./gradlew clean
+      - run:
+          name: Assemble
+          command: ./gradlew assemble
+      - run:
+          name: Test
+          command: ./gradlew test
+
+workflows:
+  version: 2
+  jobs:
+    - build
